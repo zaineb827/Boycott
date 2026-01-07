@@ -30,12 +30,12 @@ pipeline {
         stage('Build & Push Docker Image') {
             steps {
                 script {
-                  withCredentials([usernamePassword(credentialsId: 'dockerhub-pwd', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                  sh """
-                    echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'DOCKERHUB_TOKEN')]) {
+                sh """
+                    
                     docker build -t ${DOCKERHUB_USERNAME}/boycott-app:latest .
                     docker push ${DOCKERHUB_USERNAME}/boycott-app:latest
-                   """
+                """
             }
             }
             }
