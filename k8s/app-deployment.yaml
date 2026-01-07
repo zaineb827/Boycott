@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: boycott-app
-          image: tondockerhubusername/boycott-app:latest
+          image: zainebkallel/boycott-app:latest
           ports:
             - containerPort: 8080
           env:
