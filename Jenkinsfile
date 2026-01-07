@@ -32,7 +32,7 @@ pipeline {
                 script {
             withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'DOCKERHUB_TOKEN')]) {
                 sh """
-                    
+                    echo $DOCKERHUB_TOKEN | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
                     docker build -t ${DOCKERHUB_USERNAME}/boycott-app:latest .
                     docker push ${DOCKERHUB_USERNAME}/boycott-app:latest
                 """
