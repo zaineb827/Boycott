@@ -29,11 +29,15 @@ pipeline {
 
         stage('Build & Push Docker Image') {
             steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', DOCKERHUB_CREDENTIALS) {
-                        sh "docker build -t ${IMAGE_NAME} ."
-                        sh "docker push ${IMAGE_NAME}"
-                    }
+                script withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'DOCKERHUB_TOKEN')]) {
+                // On construit l'image Docker
+                sh "docker build -t ${DOCKERHUB_USERNAME}/boycott-app:latest ."
+                
+                // On se connecte à Docker Hub avec le token
+                sh "echo $DOCKERHUB_TOKEN | docker login -u ${DOCKERHUB_USERNAME} --password-stdin"
+                
+                // On pousse l'image
+                sh "docker push ${DOCKERHUB_USERNAME}/boycott-app:latest"
                 }
             }
         }
