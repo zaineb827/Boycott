@@ -26,6 +26,19 @@ pipeline {
                 sh 'mvn clean install -DskipTests'
             }
         }
+        stage('SonarQube Analysis') {
+          steps {
+        withSonarQubeEnv('SonarQube') {
+            sh '''
+                mvn sonar:sonar \
+                -Dsonar.projectKey=boycott-app \
+                -Dsonar.projectName=boycott-app \
+                -Dsonar.host.url=http://localhost:9000 \
+                -Dsonar.login=$SONAR_AUTH_TOKEN
+            '''
+               }
+          }
+     }
 
         stage('Build & Push Docker Image') {
             steps {
