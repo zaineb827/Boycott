@@ -28,7 +28,7 @@ pipeline {
         }
         stage('SonarQube Analysis') {
           steps {
-        withSonarQubeEnv('SonarQube') {
+        withSonarQubeEnv('MySonarServer') {
             sh '''
                 mvn sonar:sonar \
                 -Dsonar.projectKey=boycott-app \
