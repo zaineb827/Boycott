@@ -47,7 +47,7 @@ pipeline {
                   docker run --rm \
                     -v $(pwd):/project \
                     aquasec/trivy:latest \
-                    config /project/Dockerfile
+                    config /project/dockerfile
                 '''
             }
         }
