@@ -42,38 +42,45 @@ pipeline {
         }
 
         stage('Trivy Scan - Dockerfile') {
-            steps {
-                sh '''
-                  docker run --rm \
-                    -v $(pwd):/project \
-                    aquasec/trivy:latest \
-                    config /project/dockerfile
-                '''
-            }
-        }
+    steps {
+        sh """
+          docker run --rm \
+            -v ${env.WORKSPACE}:/project \
+            aquasec/trivy:latest \
+            config /project/dockerfile
+        """
+    }
+}
 
         stage('Build & Trivy Scan - Image') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'DOCKERHUB_TOKEN')]) {
-                        sh """
-                            # Login Docker Hub
-                            echo $DOCKERHUB_TOKEN | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
+    steps {
+        script {
+            withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'DOCKERHUB_TOKEN')]) {
+                sh """
+                    # Login Docker Hub
+                    echo $DOCKERHUB_TOKEN | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
 
-                            # Build Docker image
-                            docker build --no-cache -t ${IMAGE_NAME} .
+                    # Build Docker image
+                    docker build --no-cache -t ${IMAGE_NAME} .
 
-                            # Scan Docker image avec Trivy
-                            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                                aquasec/trivy:latest image --severity HIGH,CRITICAL --exit-code 1 ${IMAGE_NAME}
+                    # Scan Docker image avec Trivy (timeout augmenté, cache activé)
+                    docker run --rm \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v /var/lib/trivy:/root/.cache/ \
+                        aquasec/trivy:latest image \
+                        --severity HIGH,CRITICAL \
+                        --exit-code 1 \
+                        --timeout 30m \
+                        ${IMAGE_NAME}
 
-                            # Push sur Docker Hub
-                            docker push ${IMAGE_NAME}
-                        """
-                    }
-                }
+                    # Push sur Docker Hub
+                    docker push ${IMAGE_NAME}
+                """
             }
         }
+    }
+}
+
 
         stage('Deploy MySQL & App to Kubernetes') {
             steps {
