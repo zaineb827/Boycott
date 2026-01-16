@@ -26,48 +26,44 @@ pipeline {
                 sh 'mvn clean install -DskipTests'
             }
         }
-
         
-        stage('Trivy Scan - Dockerfile') {
-    steps {
-        sh """
-          docker run --rm \
+        stage('SonarQube Analysis') {
+          steps {
+        withSonarQubeEnv('MySonarServer') {
+            sh '''
+                mvn sonar:sonar \
+                -Dsonar.projectKey=boycott-app \
+                -Dsonar.projectName=boycott-app \
+                -Dsonar.host.url=http://localhost:9000 \
+                -Dsonar.login=$SONAR_AUTH_TOKEN
+            '''
+               }
+          }
+        }
+         
+          stage('Trivy Scan - Dockerfile') {
+         steps {
+            sh """
+           docker run --rm \
             -v ${env.WORKSPACE}:/project \
             aquasec/trivy:latest \
             config /project/dockerfile
         """
-    }
-}
-
-        stage('Build & Trivy Scan - Image') {
-    steps {
-        script {
+         }
+        }
+        stage('Build & Push Docker Image') {
+            steps {
+                script {
             withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'DOCKERHUB_TOKEN')]) {
                 sh """
-                    # Login Docker Hub
                     echo $DOCKERHUB_TOKEN | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
-
-                    # Build Docker image
-                    docker build --no-cache -t ${IMAGE_NAME} .
-
-                    # Scan Docker image avec Trivy (timeout augmenté, cache activé)
-                    docker run --rm \
-                        -v /var/run/docker.sock:/var/run/docker.sock \
-                        -v /var/lib/trivy:/root/.cache/ \
-                        aquasec/trivy:latest image \
-                        --severity HIGH,CRITICAL \
-                        --exit-code 1 \
-                        --timeout 30m \
-                        ${IMAGE_NAME}
-
-                    # Push sur Docker Hub
-                    docker push ${IMAGE_NAME}
+                    docker build --no-cache -t ${DOCKERHUB_USERNAME}/boycott-app:latest .
+                    docker push ${DOCKERHUB_USERNAME}/boycott-app:latest
                 """
             }
+            }
+            }
         }
-    }
-}
-
 
         stage('Deploy MySQL & App to Kubernetes') {
             steps {
